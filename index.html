@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Forklift Pre-Check List - Lion Beer</title>
+<!-- PWA Setup -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js');
+        });
+      }
+</script>
+
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; margin: 12px; background-color: #f8fafc; color: #1e293b; }
