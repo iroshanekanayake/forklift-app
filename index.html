@@ -61,7 +61,7 @@
   .btn-submit { display: block; width: 100%; padding: 14px; background: #15803d; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
   .btn-submit:disabled { background: #94a3b8; }
 
-  /* Dashboard Card Layout Styles (Image 2 Matching) */
+  /* Dashboard Card Layout Styles */
   .dash-header-card { background: #d97706; color: white; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
   .dash-header-card h3 { margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; }
   .dash-header-card p { margin: 3px 0 0 0; font-size: 12px; opacity: 0.9; }
@@ -80,10 +80,12 @@
   .card-details div { margin-bottom: 2px; }
   .fault-text { color: #dc2626; font-weight: bold; }
   
-  .btn-print-report { display: block; width: 100%; text-align: center; background: #0284c7; color: white; padding: 10px; font-weight: bold; font-size: 14px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; text-decoration: none; }
+  .card-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-print-report { flex: 2; text-align: center; background: #0284c7; color: white; padding: 10px; font-weight: bold; font-size: 14px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
+  .btn-delete-report { flex: 1; text-align: center; background: #dc2626; color: white; padding: 10px; font-weight: bold; font-size: 14px; border: none; border-radius: 6px; cursor: pointer; }
   
   @media print {
-    .tabs, .btn-submit, .btn-print-report, .btn-print-main { display: none !important; }
+    .tabs, .btn-submit, .card-actions, .btn-print-main { display: none !important; }
     body { background: white; margin: 0; }
     .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
   }
@@ -160,7 +162,7 @@
     <button class="btn-submit" id="submitBtn">SUBMIT CHECKLIST</button>
   </div>
 
-  <!-- TAB 2: LIVE DASHBOARD (IMAGE 2 STYLE CARD VIEW) -->
+  <!-- TAB 2: LIVE DASHBOARD -->
   <div id="tab-dashboard" class="tab-content">
     <div class="dash-header-card">
       <div>
@@ -215,7 +217,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, set, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getDatabase, ref, push, set, get, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCeDKeig25MB0iwawWna2891Fx52wM7Jyk",
@@ -380,7 +382,7 @@
     switchTab('check');
   }
 
-  // Card View Dashboard Fetching System (Matching Image 2)
+  // Dashboard Loader with Time Lock Check
   window.fetchDashboardData = async function() {
     const container = document.getElementById('cardLogsContainer');
     container.innerHTML = '<div style="text-align:center; padding:30px; color:#64748b;">Loading Live Inspection Logs...</div>';
@@ -397,11 +399,13 @@
       container.innerHTML = '';
       let logs = [];
       snapshot.forEach(child => {
-        logs.unshift(child.val()); // Latest records on top
+        logs.unshift({ key: child.key, ...child.val() });
       });
 
+      const currentTime = new Date().getTime();
+      const ALLOWED_DELETE_HOURS = 24; // ඔබට පැය 12ක් කිරීමට අවශ්‍ය නම් මෙතැන 12 කරන්න
+
       logs.forEach(log => {
-        // Collect Defect Items if any
         let defectsList = [];
         if(log.checks) {
           for (const [key, val] of Object.entries(log.checks)) {
@@ -418,6 +422,15 @@
           ? `<div><span class="fault-text">Faults Detected:</span> ${defectsList.join(', ')}</div>` 
           : '';
 
+        // Calculate Time Difference for Delete Lock
+        const logTime = log.timestamp ? new Date(log.timestamp).getTime() : 0;
+        const hoursPassed = (currentTime - logTime) / (1000 * 60 * 60);
+        
+        // Show delete button ONLY if submitted within last 24 hours
+        const deleteBtnHtml = (logTime > 0 && hoursPassed <= ALLOWED_DELETE_HOURS)
+          ? `<button class="btn-delete-report" onclick="deleteLog('${log.key}', ${hoursPassed})">🗑️ Delete</button>`
+          : `<span style="font-size:11px; color:#94a3b8; align-self:center; font-weight:bold;">🔒 Record Locked</span>`;
+
         const card = document.createElement('div');
         card.className = `log-card ${isFaulty ? 'has-fault' : ''}`;
         card.innerHTML = `
@@ -432,13 +445,34 @@
             ${faultsRow}
             <div><b>Remarks:</b> ${log.overallRemarks || (isFaulty ? 'Not Good' : 'Good')}</div>
           </div>
-          <button class="btn-print-report" onclick="window.print()">Print Report</button>
+          <div class="card-actions">
+            <button class="btn-print-report" onclick="window.print()">Print Report</button>
+            ${deleteBtnHtml}
+          </div>
         `;
         container.appendChild(card);
       });
 
     } catch(err) {
       container.innerHTML = `<div style="text-align:center; padding:30px; color:red;">Error loading logs: ${err.message}</div>`;
+    }
+  }
+
+  // Security Checked Delete Function
+  window.deleteLog = async function(key, hoursPassed) {
+    if (hoursPassed > 24) {
+      alert(" This report is older than 24 hours and is permanently locked. It cannot be deleted.");
+      return;
+    }
+
+    if (confirm("Are you sure you want to delete this report? (Available only within 24 hours of entry)")) {
+      try {
+        await remove(ref(db, `checklists/${key}`));
+        alert("Log Deleted Successfully!");
+        window.fetchDashboardData();
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
     }
   }
 
@@ -487,7 +521,6 @@
       document.getElementById('overallRemarks').value = '';
       document.getElementById('mileageInput').value = '';
 
-      // Auto Switch to Dashboard Tab to confirm entry
       switchTab('dashboard');
     } catch (error) {
       alert("Submission Error: " + error.message);
