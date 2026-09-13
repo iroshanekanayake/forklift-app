@@ -11,7 +11,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js');
+      navigator.serviceWorker.register('./service-worker.js');
     });
   }
 </script>
@@ -21,8 +21,8 @@
   body { font-family: Arial, sans-serif; margin: 12px; background-color: #f8fafc; color: #1e293b; }
   .container { max-width: 850px; margin: auto; background: white; padding: 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 5px solid #d97706; }
   
-  .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-  .tab-btn { flex: 1; padding: 10px; font-weight: bold; font-size: 15px; border: none; background: #f1f5f9; color: #475569; border-radius: 8px; cursor: pointer; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+  .tab-btn { flex: 1; padding: 10px 4px; font-weight: bold; font-size: 14px; border: none; background: #f1f5f9; color: #475569; border-radius: 8px; cursor: pointer; text-align: center; }
   .tab-btn.active { background: #d97706; color: white; }
   
   .tab-content { display: none; }
@@ -60,16 +60,22 @@
 
   .btn-submit { display: block; width: 100%; padding: 14px; background: #15803d; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
   .btn-submit:disabled { background: #94a3b8; }
+
+  .badge-ok { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; }
+  .badge-issue { background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; }
+  .table-responsive { overflow-x: auto; }
 </style>
 </head>
 <body>
 
 <div class="container">
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('check')">Pre-Check List</button>
-    <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    <button class="tab-btn active" onclick="switchTab('check')">📋 Pre-Check List</button>
+    <button class="tab-btn" onclick="switchTab('dashboard')">📊 Live Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
   </div>
 
+  <!-- TAB 1: PRE-CHECK FORM -->
   <div id="tab-check" class="tab-content active">
     <h2>FORKLIFT PRE-CHECK LIST</h2>
     <p class="company-sub">LION BEER COMPANY (PVT) LTD</p>
@@ -131,6 +137,36 @@
     <button class="btn-submit" id="submitBtn">SUBMIT CHECKLIST</button>
   </div>
 
+  <!-- TAB 2: LIVE DASHBOARD -->
+  <div id="tab-dashboard" class="tab-content">
+    <h2>LIVE INSPECTION DASHBOARD</h2>
+    <p class="company-sub" style="margin-bottom:15px;">REALTIME SUBMISSION RECORDS</p>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-size:13px; font-weight:bold; color:#475569;">Recent 30 Submissions</span>
+      <button onclick="window.fetchDashboardData()" style="padding:6px 12px; background:#d97706; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">🔄 Refresh</button>
+    </div>
+
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Forklift</th>
+            <th>Operator</th>
+            <th>Shift</th>
+            <th>Status</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="dashTableBody">
+          <tr><td colspan="6" style="text-align:center;">Loading Live Submissions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: SETTINGS -->
   <div id="tab-settings" class="tab-content">
     <h2>SETTINGS</h2>
     <div class="grid-fields" style="grid-template-columns: 1fr;">
@@ -170,7 +206,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getDatabase, ref, push, set, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCeDKeig25MB0iwawWna2891Fx52wM7Jyk",
@@ -311,8 +347,12 @@
     if(tab === 'check') {
       document.querySelectorAll('.tab-btn')[0].classList.add('active');
       document.getElementById('tab-check').classList.add('active');
-    } else {
+    } else if(tab === 'dashboard') {
       document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('tab-dashboard').classList.add('active');
+      window.fetchDashboardData();
+    } else {
+      document.querySelectorAll('.tab-btn')[2].classList.add('active');
       document.getElementById('tab-settings').classList.add('active');
     }
   }
@@ -329,6 +369,47 @@
     renderDateButtons();
     alert("Settings Saved Successfully!");
     switchTab('check');
+  }
+
+  // Dashboard Fetching System
+  window.fetchDashboardData = async function() {
+    const tbody = document.getElementById('dashTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Fetching Live Data...</td></tr>';
+    
+    try {
+      const q = query(ref(db, 'checklists'), limitToLast(30));
+      const snapshot = await get(q);
+      
+      if(!snapshot.exists()) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No records found.</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = '';
+      let logs = [];
+      snapshot.forEach(child => {
+        logs.unshift(child.val()); // Latest first
+      });
+
+      logs.forEach(log => {
+        const badge = log.hasIssue 
+          ? `<span class="badge-issue">DEFECT</span>` 
+          : `<span class="badge-ok">PASSED</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${log.date || '-'}</b></td>
+          <td><b>${log.forkliftNo || '-'}</b></td>
+          <td>${log.operator || '-'}</td>
+          <td style="font-size:11px;">${log.shift || '-'}</td>
+          <td style="text-align:center;">${badge}</td>
+          <td>${log.overallRemarks || 'None'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
+    }
   }
 
   document.getElementById('submitBtn').addEventListener('click', async () => {
@@ -375,6 +456,9 @@
       submitBtn.textContent = "SUBMIT CHECKLIST";
       document.getElementById('overallRemarks').value = '';
       document.getElementById('mileageInput').value = '';
+
+      // Auto Switch to Dashboard Tab to confirm entry
+      switchTab('dashboard');
     } catch (error) {
       alert("Submission Error: " + error.message);
       submitBtn.disabled = false;
