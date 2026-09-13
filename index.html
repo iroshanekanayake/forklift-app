@@ -2,387 +2,277 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forklift Pre-Check List - Lion Beer</title>
-<!-- PWA Setup -->
-<link rel="manifest" href="./manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1e3a8a">
-<meta name="mobile-web-app-capable" content="yes">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js');
-    });
-  }
-</script>
-
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Forklift Check">
+<link rel="manifest" href="./manifest.json">
+<title>Lion Beer - Forklift Pre-Check</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; margin: 12px; background-color: #f8fafc; color: #1e293b; }
-  .container { max-width: 850px; margin: auto; background: white; padding: 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 5px solid #d97706; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+  body { background: #f3f4f6; color: #1f2937; padding-bottom: 20px; }
   
-  .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-  .tab-btn { flex: 1; padding: 10px; font-weight: bold; font-size: 15px; border: none; background: #f1f5f9; color: #475569; border-radius: 8px; cursor: pointer; }
-  .tab-btn.active { background: #d97706; color: white; }
+  header { background: #1e3a8a; color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 10; shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  header h1 { font-size: 18px; }
+  header p { font-size: 12px; opacity: 0.8; }
+
+  nav { display: flex; background: #ffffff; border-bottom: 2px solid #e5e7eb; position: sticky; top: 57px; z-index: 9; }
+  nav button { flex: 1; border: none; background: none; padding: 12px; font-weight: bold; color: #4b5563; font-size: 14px; cursor: pointer; }
+  nav button.active { color: #1e3a8a; border-bottom: 3px solid #1e3a8a; background: #eff6ff; }
+
+  main { max-width: 900px; margin: 15px auto; padding: 0 10px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .field { flex: 1; min-width: 140px; }
+  label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #374151; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+  th { background: #f9fafb; font-weight: bold; }
+  tr:nth-child(even) { background: #f9fafb; }
+
+  .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+  .btn-primary { background: #1e3a8a; color: white; margin-top: 10px; }
+  .btn-secondary { background: #10b981; color: white; margin-bottom: 10px; }
   
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; }
+  .badge-good { background: #d1fae5; color: #065f46; }
+  .badge-bad { background: #fee2e2; color: #991b1b; }
 
-  h2 { text-align: center; margin: 5px 0 2px 0; color: #d97706; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
-  .company-sub { text-align: center; margin-top:0; font-size: 13px; font-weight: bold; color: #15803d; letter-spacing: 1px; }
-
-  .grid-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: #fef3c7; padding: 14px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #fde68a; }
-  .field { display: flex; flex-direction: column; }
-  .field label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #78350f; }
-  select, input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; background: white; width: 100%; }
-
-  .date-scroll-wrap { overflow-x: auto; display: flex; gap: 6px; padding: 6px 0; margin-top: 4px; }
-  .date-btn { flex: 0 0 auto; min-width: 42px; height: 42px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
-  .date-btn.active { background: #15803d; color: white; border-color: #15803d; }
-
-  .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
-  .pill-item { flex: 1 1 calc(33.33% - 6px); min-width: 80px; text-align: center; }
-  .pill-item input { display: none; }
-  .pill-item label { display: block; padding: 8px 4px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-weight: bold; cursor: pointer; font-size: 13px; width: 100%; box-sizing: border-box; }
-  .pill-item input:checked + label { border-color: #15803d; background: #f0fdf4; color: #15803d; }
-
-  table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-  th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; font-size: 14px; }
-  th { background-color: #d97706; color: white; text-align: center; }
-  
-  .remark-input { width: 100%; height: 50px; padding: 10px; font-size: 15px; font-weight: bold; color: #0f172a; border: 1px solid #94a3b8; border-radius: 6px; background: #fffdf0; resize: vertical; transition: all 0.2s ease-in-out; }
-  .remark-input:focus { height: 90px !important; background: #ffffff; border: 2px solid #15803d; box-shadow: 0 4px 10px rgba(21, 128, 61, 0.2); outline: none; }
-  
-  .status-group { display: flex; gap: 15px; justify-content: center; }
-  .status-group label { font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; }
-  .status-good { color: #16a34a; }
-  .status-bad { color: #dc2626; }
-
-  .btn-submit { display: block; width: 100%; padding: 14px; background: #15803d; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-  .btn-submit:disabled { background: #94a3b8; }
+  .table-wrap { overflow-x: auto; }
 </style>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
-<div class="container">
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('check')">Pre-Check List</button>
-    <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
-  </div>
+<header>
+  <h1>Lion Beer - Forklift Pre-Check</h1>
+  <p>Daily Maintenance & Safety Inspection System</p>
+</header>
 
-  <div id="tab-check" class="tab-content active">
-    <h2>FORKLIFT PRE-CHECK LIST</h2>
-    <p class="company-sub">LION BEER COMPANY (PVT) LTD</p>
+<nav>
+  <button id="tabForm" class="active" onclick="showPage('form-page')">📋 Pre-Check Form</button>
+  <button id="tabDash" onclick="showPage('dash-page')">📊 Live Dashboard</button>
+</nav>
 
-    <div class="grid-fields">
-      <div class="field">
-        <label>FORKLIFT NUMBER:</label>
-        <select id="forkliftNo"></select>
+<main>
+
+  <!-- PAGE 1: PRE-CHECK FORM -->
+  <section id="form-page" class="page active">
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>Date & Time</label>
+          <input type="text" id="dateTime" readonly>
+        </div>
+        <div class="field">
+          <label>Operator Name</label>
+          <input type="text" id="operatorName" placeholder="Enter your name">
+        </div>
       </div>
-      <div class="field">
-        <label>FORKLIFT MODEL:</label>
-        <div class="pill-group" id="modelGroup"></div>
-      </div>
-      <div class="field">
-        <label>FORKLIFT OWNER:</label>
-        <div class="pill-group" id="ownerGroup"></div>
-      </div>
-      <div class="field">
-        <label>SHIFT TIME:</label>
-        <select id="shiftTime">
-          <option value="Day Shift (06:00 AM - 06:00 PM)">Day Shift (06:00 AM - 06:00 PM)</option>
-          <option value="Night Shift (06:00 PM - 06:00 AM)">Night Shift (06:00 PM - 06:00 AM)</option>
-        </select>
-      </div>
-      <div class="field" style="grid-column: 1 / -1;">
-        <label>SELECT DATE: <span id="selectedDateDisplay" style="color:#15803d; font-weight:bold;"></span></label>
-        <div class="date-scroll-wrap" id="dateButtons"></div>
-      </div>
-      <div class="field">
-        <label>MILEAGE / METER (KM):</label>
-        <input type="number" id="mileageInput" placeholder="Enter Mileage">
-      </div>
-      <div class="field">
-        <label>OPERATOR NAME / EPF NO:</label>
-        <input type="text" id="operatorInput" placeholder="Name or EPF">
-      </div>
-      <div class="field">
-        <label>SUPERVISOR NAME:</label>
-        <select id="supervisorSelect"></select>
+      <div class="row">
+        <div class="field">
+          <label>Forklift No / ID</label>
+          <input type="text" id="forkliftId" placeholder="e.g. FL-01">
+        </div>
+        <div class="field">
+          <label>Hour Meter Reading</label>
+          <input type="number" id="hourMeter" placeholder="e.g. 1250">
+        </div>
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 10%;">SN</th>
-          <th style="width: 55%;">CHECKS</th>
-          <th style="width: 35%;">CONDITION</th>
-        </tr>
-      </thead>
-      <tbody id="checkListBody"></tbody>
-    </table>
-
-    <div class="field" style="margin-bottom: 15px;">
-      <label style="font-weight: bold; font-size: 14px; color: #78350f;">OVERALL REMARKS:</label>
-      <textarea id="overallRemarks" class="remark-input" placeholder="Type overall remarks here..."></textarea>
-    </div>
-
-    <button class="btn-submit" id="submitBtn">SUBMIT CHECKLIST</button>
-  </div>
-
-  <div id="tab-settings" class="tab-content">
-    <h2>SETTINGS</h2>
-    <div class="grid-fields" style="grid-template-columns: 1fr;">
-      <div class="field">
-        <label>SET YEAR:</label>
-        <select id="setYear">
-          <option value="2026">2026</option>
-          <option value="2027">2027</option>
-          <option value="2028">2028</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>SET MONTH:</label>
-        <select id="setMonth">
-          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-          <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>FORKLIFT MODELS (Commas වලින් වෙන් කරන්න):</label>
-        <input type="text" id="setModels" placeholder="e.g. Battery, Gas, Diesel, Petrol">
-      </div>
-      <div class="field">
-        <label>FORKLIFT OWNERS (Commas වලින් වෙන් කරන්න):</label>
-        <input type="text" id="setOwners" placeholder="e.g. Winwill, Tasma, Other">
-      </div>
-      <div class="field">
-        <label>SUPERVISOR NAMES (Commas වලින් වෙන් කරන්න):</label>
-        <input type="text" id="setSupervisors" placeholder="e.g. SANJEEWA, ANITH">
+    <div class="card">
+      <h3>Inspection Items</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Check Item</th>
+              <th style="width: 100px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="checkListBody">
+            <!-- Dynamic Inspection Items -->
+          </tbody>
+        </table>
       </div>
     </div>
-    <button class="btn-submit" onclick="saveSettings()">Save Settings</button>
-  </div>
-</div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <div class="card">
+      <div class="field">
+        <label>Overall Remarks / Defects</label>
 
+      </div>
+      <button class="btn btn-primary" onclick="submitChecklist()">Submit Pre-Check Report</button>
+    </div>
+  </section>
+
+  <!-- PAGE 2: LIVE DASHBOARD -->
+  <section id="dash-page" class="page">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3>Submitted Reports</h3>
+        <button class="btn btn-secondary" style="width: auto; padding: 6px 12px;" onclick="loadDashboardData()">🔄 Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date/Time</th>
+              <th>Forklift</th>
+              <th>Operator</th>
+              <th>Meter</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="dashTableBody">
+            <tr><td colspan="5" style="text-align:center;">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // 1. Firebase Config Setup
   const firebaseConfig = {
-    apiKey: "AIzaSyCeDKeig25MB0iwawWna2891Fx52wM7Jyk",
-    authDomain: "forkliftapp-6ca94.firebaseapp.com",
-    databaseURL: "https://forkliftapp-6ca94-default-rtdb.firebaseio.com",
-    projectId: "forkliftapp-6ca94",
-    storageBucket: "forkliftapp-6ca94.firebasestorage.app",
-    messagingSenderId: "571222355847",
-    appId: "1:571222355847:web:67cb10919b7e1d3b0f2d22",
-    measurementId: "G-5NBG4590TH"
+    databaseURL: "https://forkliftapp-6ca94-default-rtdb.firebaseio.com"
   };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  let appSettings = JSON.parse(localStorage.getItem('forklift_settings')) || {
-    year: "2026",
-    month: "9",
-    models: "Gas, Battery, Diesel, Petrol",
-    owners: "Winwill, Tasma, Other",
-    supervisors: "SANJEEWA, ANITH"
-  };
-
-  let selectedDay = new Date().getDate();
-
+  // Checklist Items
   const items = [
-    "Head lights", "Signal lights", "Break lights", "Reverse lights", "Parking lights",
-    "Spinning light", "Horn working", "Safety belts", "Windshield clean", "Side mirrors condition",
-    "Fork movement", "Reverse horn", "Brake check", "Any exterior damage", "All tires' conditions",
-    "Battery condition", "Any leakages", "Power steering", "Hand brake",
-    "Workability of handles & locks are satisfactory", "Mileage Check"
+    "Engine Oil Level", "Hydraulic Oil Level", "Coolant Level", "Brake Fluid Level",
+    "Tire Condition & Pressure", "Forks & Backrest", "Chains & Hoses", "Seat Belt Operation",
+    "Headlights & Tail Lights", "Indicator Lights", "Reverse Horn & Alarm", "Service & Parking Brake",
+    "Steering Operation", "Hydraulic Controls (Lift/Tilt)", "Battery Condition"
   ];
 
-  window.init = function() {
-    const flSelect = document.getElementById('forkliftNo');
-    flSelect.innerHTML = '';
-    for(let i=1; i<=30; i++) {
-      let num = String(i).padStart(2, '0');
-      flSelect.innerHTML += `<option value="FL ${num}">FL ${num}</option>`;
-    }
+  // Auto set Date & Time
+  document.getElementById("dateTime").value = new Date().toLocaleString("en-LK");
 
-    document.getElementById('setYear').value = appSettings.year;
-    document.getElementById('setMonth').value = appSettings.month;
-    document.getElementById('setModels').value = appSettings.models;
-    document.getElementById('setOwners').value = appSettings.owners;
-    document.getElementById('setSupervisors').value = appSettings.supervisors;
-
-    renderDynamicFields();
-    renderDateButtons();
-    renderChecklist();
-  }
-
-  function renderDynamicFields() {
-    const modelGroup = document.getElementById('modelGroup');
-    modelGroup.innerHTML = '';
-    const models = appSettings.models.split(',');
-    models.forEach((mod, idx) => {
-      let m = mod.trim();
-      if(m) {
-        modelGroup.innerHTML += `
-          <div class="pill-item">
-            <input type="radio" id="mod_${idx}" name="model" value="${m}" ${idx === 0 ? 'checked' : ''}>
-            <label for="mod_${idx}">${m}</label>
-          </div>`;
-      }
-    });
-
-    const ownerGroup = document.getElementById('ownerGroup');
-    ownerGroup.innerHTML = '';
-    const owners = appSettings.owners.split(',');
-    owners.forEach((own, idx) => {
-      let o = own.trim();
-      if(o) {
-        ownerGroup.innerHTML += `
-          <div class="pill-item">
-            <input type="radio" id="own_${idx}" name="owner" value="${o}" ${idx === 0 ? 'checked' : ''}>
-            <label for="own_${idx}">${o}</label>
-          </div>`;
-      }
-    });
-
-    const supeSelect = document.getElementById('supervisorSelect');
-    supeSelect.innerHTML = '';
-    const names = appSettings.supervisors.split(',');
-    names.forEach(name => {
-      if(name.trim()) supeSelect.innerHTML += `<option value="${name.trim()}">${name.trim()}</option>`;
-    });
-  }
-
-  function renderDateButtons() {
-    const year = Number(appSettings.year);
-    const month = Number(appSettings.month);
-    const totalDays = new Date(year, month, 0).getDate();
-    const container = document.getElementById('dateButtons');
-    container.innerHTML = '';
-    
-    if(selectedDay > totalDays) selectedDay = 1;
-
-    for(let d=1; d<=totalDays; d++) {
-      const btn = document.createElement('button');
-      btn.className = `date-btn ${d === selectedDay ? 'active' : ''}`;
-      btn.textContent = d;
-      btn.onclick = () => {
-        selectedDay = d;
-        renderDateButtons();
-      };
-      container.appendChild(btn);
-    }
-
-    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    document.getElementById('selectedDateDisplay').textContent = `${appSettings.year} ${monthNames[month-1]} ${String(selectedDay).padStart(2, '0')}`;
-  }
-
-  function renderChecklist() {
-    const tbody = document.getElementById('checkListBody');
-    tbody.innerHTML = '';
-    items.forEach((item, index) => {
-      const sn = String(index + 1).padStart(2, '0');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align: center; font-weight: bold;">${sn}</td>
-        <td><b>${item}</b></td>
+  // Render Form Checklist
+  const checkListBody = document.getElementById("checkListBody");
+  items.forEach((item, index) => {
+    checkListBody.innerHTML += `
+      <tr>
+        <td>${item}</td>
         <td>
-          <div class="status-group">
-            <label class="status-good"><input type="radio" name="st_${index}" value="Good" checked> Good</label>
-            <label class="status-bad"><input type="radio" name="st_${index}" value="Not Good"> Not Good</label>
-          </div>
+          <select id="item_${index}">
+            <option value="Good">Good</option>
+            <option value="Not Good">Not Good</option>
+          </select>
         </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  window.switchTab = function(tab) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    if(tab === 'check') {
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.getElementById('tab-check').classList.add('active');
-    } else {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
-      document.getElementById('tab-settings').classList.add('active');
-    }
-  }
-
-  window.saveSettings = function() {
-    appSettings.year = document.getElementById('setYear').value;
-    appSettings.month = document.getElementById('setMonth').value;
-    appSettings.models = document.getElementById('setModels').value;
-    appSettings.owners = document.getElementById('setOwners').value;
-    appSettings.supervisors = document.getElementById('setSupervisors').value;
-    
-    localStorage.setItem('forklift_settings', JSON.stringify(appSettings));
-    renderDynamicFields();
-    renderDateButtons();
-    alert("Settings Saved Successfully!");
-    switchTab('check');
-  }
-
-  document.getElementById('submitBtn').addEventListener('click', async () => {
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = "SUBMITTING...";
-
-    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const formattedDate = `${appSettings.year}-${monthNames[Number(appSettings.month)-1]}-${String(selectedDay).padStart(2, '0')}`;
-
-    const checkResults = {};
-    let hasBadCondition = false;
-    items.forEach((item, index) => {
-      const checkedVal = document.querySelector(`input[name="st_${index}"]:checked`).value;
-      checkResults[item] = checkedVal;
-      if(checkedVal === "Not Good") hasBadCondition = true;
-    });
-
-    const selectedModel = document.querySelector('input[name="model"]:checked') ? document.querySelector('input[name="model"]:checked').value : '';
-    const selectedOwner = document.querySelector('input[name="owner"]:checked') ? document.querySelector('input[name="owner"]:checked').value : '';
-
-    const payload = {
-      timestamp: new Date().toISOString(),
-      date: formattedDate,
-      forkliftNo: document.getElementById('forkliftNo').value,
-      model: selectedModel,
-      owner: selectedOwner,
-      shift: document.getElementById('shiftTime').value,
-      mileage: document.getElementById('mileageInput').value,
-      operator: document.getElementById('operatorInput').value,
-      supervisor: document.getElementById('supervisorSelect').value,
-      checks: checkResults,
-      hasIssue: hasBadCondition,
-      overallRemarks: document.getElementById('overallRemarks').value
-    };
-
-    try {
-      const logsRef = ref(db, 'checklists');
-      const newLogRef = push(logsRef);
-      await set(newLogRef, payload);
-
-      alert("Checklist Submitted Successfully!");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "SUBMIT CHECKLIST";
-      document.getElementById('overallRemarks').value = '';
-      document.getElementById('mileageInput').value = '';
-    } catch (error) {
-      alert("Submission Error: " + error.message);
-      submitBtn.disabled = false;
-      submitBtn.textContent = "SUBMIT CHECKLIST";
-    }
+      </tr>
+    `;
   });
 
-  window.init();
+  // Page Switcher
+  function showPage(pageId) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(pageId).classList.add("active");
+    
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    if(pageId === 'form-page') document.getElementById("tabForm").classList.add("active");
+    if(pageId === 'dash-page') {
+      document.getElementById("tabDash").classList.add("active");
+      loadDashboardData(); // Auto load data on tab open
+    }
+  }
+
+  // Submit Checklist to Firebase
+  function submitChecklist() {
+    const opName = document.getElementById("operatorName").value.trim();
+    const flId = document.getElementById("forkliftId").value.trim();
+    const meter = document.getElementById("hourMeter").value.trim();
+    const remarks = document.getElementById("remarks").value.trim();
+
+    if(!opName || !flId) {
+      alert("Please fill Operator Name and Forklift ID!");
+      return;
+    }
+
+    let checklistData = {};
+    items.forEach((item, index) => {
+      checklistData[item] = document.getElementById(`item_${index}`).value;
+    });
+
+    const reportData = {
+      timestamp: document.getElementById("dateTime").value,
+      operator: opName,
+      forkliftId: flId,
+      hourMeter: meter,
+      remarks: remarks || "None",
+      checklist: checklistData
+    };
+
+    // Save to Firebase Realtime Database
+    db.ref("pre_checks").push(reportData)
+      .then(() => {
+        alert("Report Submitted Successfully! 🚀");
+        // Reset form
+        document.getElementById("operatorName").value = "";
+        document.getElementById("forkliftId").value = "";
+        document.getElementById("hourMeter").value = "";
+        document.getElementById("remarks").value = "";
+        // Auto switch to Dashboard to verify
+        showPage('dash-page');
+      })
+      .catch((error) => {
+        alert("Submission Error: " + error.message);
+      });
+  }
+
+  // Load Live Data for Dashboard
+  function loadDashboardData() {
+    const dashBody = document.getElementById("dashTableBody");
+    dashBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Fetching live data...</td></tr>';
+
+    db.ref("pre_checks").orderByKey().limitToLast(20).once("value", snapshot => {
+      dashBody.innerHTML = "";
+      if(!snapshot.exists()) {
+        dashBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No records found.</td></tr>';
+        return;
+      }
+
+      let dataArr = [];
+      snapshot.forEach(child => {
+        dataArr.unshift(child.val()); // Latest first
+      });
+
+      dataArr.forEach(row => {
+        dashBody.innerHTML += `
+          <tr>
+            <td>${row.timestamp}</td>
+            <td><b>${row.forkliftId}</b></td>
+            <td>${row.operator}</td>
+            <td>${row.hourMeter || '-'}</td>
+            <td>${row.remarks}</td>
+          </tr>
+        `;
+      });
+    });
+  }
+
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(console.error);
+    });
+  }
 </script>
+
 </body>
 </html>
