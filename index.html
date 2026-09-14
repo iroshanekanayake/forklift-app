@@ -233,6 +233,27 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  // Google Apps Script Web App URL
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLFPqRRvgbLeSncuKA-c3WJiiRi9GX5gxlVjc9I2n4uz6ID5I8HVUO937_anHmtZqqAA/exec";
+
+  // Function to send data to Google Sheet
+  function sendDataToGoogleSheet(formData) {
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)
+    })
+    .then(() => {
+      console.log("Logged to Google Sheet successfully!");
+    })
+    .catch((error) => {
+      console.error("Error logging to Google Sheet:", error);
+    });
+  }
+
   let appSettings = JSON.parse(localStorage.getItem('forklift_settings')) || {
     year: "2026",
     month: "9",
@@ -403,7 +424,7 @@
       });
 
       const currentTime = new Date().getTime();
-      const ALLOWED_DELETE_HOURS = 24; // ඔබට පැය 12ක් කිරීමට අවශ්‍ය නම් මෙතැන 12 කරන්න
+      const ALLOWED_DELETE_HOURS = 24;
 
       logs.forEach(log => {
         let defectsList = [];
@@ -486,14 +507,20 @@
 
     const checkResults = {};
     let hasBadCondition = false;
+    let reportedFaultsArr = [];
+
     items.forEach((item, index) => {
       const checkedVal = document.querySelector(`input[name="st_${index}"]:checked`).value;
       checkResults[item] = checkedVal;
-      if(checkedVal === "Not Good") hasBadCondition = true;
+      if(checkedVal === "Not Good") {
+        hasBadCondition = true;
+        reportedFaultsArr.push(item);
+      }
     });
 
     const selectedModel = document.querySelector('input[name="model"]:checked') ? document.querySelector('input[name="model"]:checked').value : '';
     const selectedOwner = document.querySelector('input[name="owner"]:checked') ? document.querySelector('input[name="owner"]:checked').value : '';
+    const overallRemarksVal = document.getElementById('overallRemarks').value;
 
     const payload = {
       timestamp: new Date().toISOString(),
@@ -507,13 +534,25 @@
       supervisor: document.getElementById('supervisorSelect').value,
       checks: checkResults,
       hasIssue: hasBadCondition,
-      overallRemarks: document.getElementById('overallRemarks').value
+      overallRemarks: overallRemarksVal
     };
 
     try {
+      // 1. Save to Firebase
       const logsRef = ref(db, 'checklists');
       const newLogRef = push(logsRef);
       await set(newLogRef, payload);
+
+      // 2. Send to Google Sheet & Trigger Email Alert
+      const sheetPayload = {
+        forkliftNo: payload.forkliftNo,
+        shift: payload.shift,
+        operator: payload.operator,
+        status: hasBadCondition ? "ATTENTION REQUIRED" : "PASSED",
+        faults: reportedFaultsArr.length > 0 ? reportedFaultsArr.join(', ') : "None",
+        remarks: overallRemarksVal || (hasBadCondition ? "Not Good" : "Good")
+      };
+      sendDataToGoogleSheet(sheetPayload);
 
       alert("Checklist Submitted Successfully!");
       submitBtn.disabled = false;
@@ -533,4 +572,3 @@
 </script>
 </body>
 </html>
-
